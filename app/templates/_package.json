@@ -1,0 +1,10 @@
+{
+  "name": "<%= projectName %>",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/<%= gitDetails['username'] %>/<%= gitDetails['repo'] %>.git"
+  },
+
+  "dependencies": {}
+}
