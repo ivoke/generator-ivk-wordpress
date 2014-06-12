@@ -223,6 +223,8 @@ IvkWordpressGenerator.prototype.tempCleanup = function tempCleanup() {
   console.log("Cleaning up temporary directory");
 
   rm('-rf', '__yo_tmp');
+
+  console.log('New Wordpress site available at: ' + chalk.green('http://192.168.33.10/') + ' (If you booted the vagrant box)');
 };
 
 
