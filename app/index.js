@@ -82,6 +82,27 @@ IvkWordpressGenerator.prototype.setupWorkingDirectory = function setupWorkingDir
   this.write('__yo_tmp/_READ_ME_IMPORTANT.txt', 'This folder is only used temporarily during yeoman generation!\nShould you see this file, it means the clean up process failed.\nYou can safely remove this directory and everything in it now.');
 };
 
+IvkWordpressGenerator.prototype.vagrantUp = function vagrantUp() {
+  var cb = this.async();
+  var prompts = [
+    {
+      type: 'confirm',
+      name: 'booting',
+      message: 'Do you want to boot the vagrant box right now?',
+      default: true
+    }
+  ];
+  this.prompt(prompts, function(props) {
+    if(props.booting) {
+      console.log('Booting vagrant box.');
+      exec('vagrant up');
+    } else {
+      console.log('Skipping vagrant up.');
+    }
+    cb();
+  });
+};
+
 IvkWordpressGenerator.prototype.installGems = function installGems() {
   console.log("Installing gem dependencies");
   exec("bundle install");
@@ -101,18 +122,19 @@ IvkWordpressGenerator.prototype.wpLocalEnvSetup = function wpLocalEnvSetup() {
       type: 'input',
       name: 'local_db_name',
       message: 'What is the name of your local development database?',
-      default: this.projectName + "_development"
+      default: 'skeleton'
     },
     {
       type: 'input',
       name: 'local_db_user',
       message: 'What is the db user?',
-      default: 'root'
+      default: 'skeleton'
     },
     {
       type: 'input',
       name: 'local_db_password',
-      message: 'What is the password for the user?'
+      message: 'What is the password for the user?',
+      default: 'secret'
     },
     {
       type: 'input',
@@ -201,6 +223,8 @@ IvkWordpressGenerator.prototype.tempCleanup = function tempCleanup() {
   console.log("Cleaning up temporary directory");
 
   rm('-rf', '__yo_tmp');
+
+  console.log('New Wordpress site available at: ' + chalk.green('http://192.168.33.10/') + ' (If you booted the vagrant box)');
 };
 
 
