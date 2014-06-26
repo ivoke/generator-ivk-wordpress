@@ -1,7 +1,7 @@
 {
-  "name": "wordpress",
-  "version": "0.0.0",
-  "description": "Wordpress Stack with Vagrant, Roots and all the goodies that come with it.",
+  "name": "generator-wordpress",
+  "version": "1.0.1",
+  "description": "Wordpress Stack with Vagrant, Capistrano, Roots and all the goodies that come with it.",
   "keywords": [
     "yeoman-generator"
   ],
