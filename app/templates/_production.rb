@@ -8,7 +8,7 @@ set :deploy_to, "/html"
 
 # OPTION 1
 
-role :web, "<%= sshConfig.user %>@<%= sshConfig.host %>"
+role :web, "<%= answers['ssh.user'] %>@<%= answers['ssh.host'] %>"
 # role :web, "second web server here"
 # role :web, "third web server here, etc"
 

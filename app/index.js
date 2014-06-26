@@ -20,6 +20,100 @@ var IvkWordpressGenerator = module.exports = function IvkWordpressGenerator(args
 
 util.inherits(IvkWordpressGenerator, yeoman.generators.Base);
 
+var QUESTIONS = [
+  {
+    name: 'project',
+    message: 'What is the name of the project?'
+  }, {
+    name: 'repo',
+    message: 'What is the location of your repository? [' + chalk.yellow.bold('user/repo') + ']:'
+  }, {
+    name: 'local.host',
+    message: 'What is the local server url?',
+  }, {
+    name: 'local.db.host',
+    message: 'What is the local database host?',
+    default: 'localhost'
+  }, {
+    name: 'local.db.name',
+    message: 'What is the local database name?',
+    default: 'skeleton'
+  }, {
+    name: 'local.db.user',
+    message: 'What is the local database user?',
+    default: 'skeleton'
+  }, {
+    name: 'local.db.password',
+    message: 'What is the local database password?',
+    default: 'secret'
+  }, {
+    name: 'local.db.prefix',
+    message: 'What is the local database prefix?',
+    default: 'wp_'
+  }, {
+    name: 'staging.host',
+    message: 'What is the staging server url?',
+  }, {
+    name: 'staging.db.host',
+    message: 'What is the staging database host?',
+    default: 'localhost'
+  }, {
+    name: 'staging.db.name',
+    message: 'What is the staging database name?',
+  }, {
+    name: 'staging.db.user',
+    message: 'What is the staging database user?',
+    default: 'root'
+  }, {
+    name: 'staging.db.password',
+    message: 'What is the staging database password?',
+  }, {
+    name: 'staging.db.prefix',
+    message: 'What is the staging database prefix?',
+    default: 'wp_'
+  }, {
+    name: 'production.host',
+    message: 'What is the production server url?',
+  }, {
+    name: 'production.db.host',
+    message: 'What is the production database host?',
+    default: 'localhost'
+  }, {
+    name: 'production.db.name',
+    message: 'What is the production database name?',
+  }, {
+    name: 'production.db.user',
+    message: 'What is the production database user?',
+    default: 'root'
+  }, {
+    name: 'production.db.password',
+    message: 'What is the production database password?',
+  }, {
+    name: 'production.db.prefix',
+    message: 'What is the production database prefix?',
+    default: 'wp_'
+  }, {
+    name: 'ssh.user',
+    message: 'What is the ssh user\'s name?',
+  }, {
+    name: 'ssh.host',
+    message: 'What is the ssh user\'s url?',
+  }, {
+    name: 'lang',
+    message: 'Enter language code, leave blank for American English',
+  }, {
+    type: 'confirm',
+    name: 'debugging',
+    message: 'Enable debugging locally?',
+    default: true
+  }, {
+    type: 'confirm',
+    name: 'booting',
+    message: 'Do you want to boot the vagrant box right now?',
+    default: true
+  }
+];
+
 
 IvkWordpressGenerator.prototype.introduction = function introduction() {
   var cb = this.async();
@@ -36,209 +130,78 @@ IvkWordpressGenerator.prototype.introduction = function introduction() {
   this._printInstructions(instructionText);
 };
 
-IvkWordpressGenerator.prototype.askForRepo = function askForRepo() {
+IvkWordpressGenerator.prototype.ask = function ask() {
   var cb = this.async();
 
-  var prompts = [{
-    type: 'input',
-    name: 'repoURI',
-    message: 'What is the location of your repository? [' + chalk.yellow.bold('user/repo') + ']:'
-  }];
+  this.prompt(QUESTIONS, function (answers) {
 
-  this.prompt(prompts, function (props) {
-    var repoURI = props.repoURI,
-        extractedData = repoURI.split('/');
+    this.answers = answers;
 
-    this.gitDetails = {
-      url: "git@github.com:" + repoURI + ".git",
-      username: extractedData[0],
-      repo: extractedData[1]
+    var segments = answers.repo.split('/');
+
+    this.answers.git = {
+      username: segments[0],
+      repo: segments[1],
+      url: 'https://github.com/' + this.answers.repo
     };
 
-    this.projectName = this.gitDetails['repo'];
+    this._fetchRepo();
+
+    exec("git submodule update");
+    exec('find . -type d | grep -i "\.git$" | xargs rm -rf'); // Remove all git folders
+
+    this._installGems();
+
+    this._vagrantUp();
+
+    this._setupWorkingDirectory();
 
     cb();
   }.bind(this));
 };
 
-IvkWordpressGenerator.prototype.fetchSkeleton = function fetchSkeleton() {
-  console.log("Fetching wp-skeleton as " + this.projectName);
+IvkWordpressGenerator.prototype._fetchRepo = function _fetchRepo() {
+  console.log('Fetching wp-skeleton as ' + this.answers.project);
 
-  exec("git clone git@github.com:ivoke/wp-skeleton.git " + this.projectName);
+  exec('git clone git@github.com:ivoke/wp-skeleton.git ' + this.answers.project);
+
+  cd(this.answers.project);
+
+  this.mkdir('__yo_tmp');
+  this.write('__yo_tmp/_READ_ME_IMPORTANT.txt', 'This folder is only used temporarily during yeoman generation!\nShould you see this file, it means the clean up process failed.\nYou can safely remove this directory and everything in it now.');
+
+  var saltURL = 'https://api.wordpress.org/secret-key/1.1/salt';
+  console.log("Fetching salts from: " + saltURL)
+  exec("curl -o __yo_tmp/salts.txt " + saltURL);
+
+  this.answers.salts = this.readFileAsString('__yo_tmp/salts.txt');
 };
 
-IvkWordpressGenerator.prototype.setupWorkingDirectory = function setupWorkingDirectory() {
-  cd(this.projectName);
-
+IvkWordpressGenerator.prototype._setupWorkingDirectory = function _setupWorkingDirectory() {
   this.copy('_package.json', 'package.json');
   this.copy('_bower.json', 'bower.json');
+  this.copy('_config.rb', 'cap/config/config.rb');
+  this.copy('_env_local.php', 'env_local.php');
+  this.copy('_production.rb', 'cap/config/production.rb');
   this.copy('editorconfig', '.editorconfig');
   this.copy('jshintrc', '.jshintrc');
   this.copy('ruby-version', '.ruby-version');
 
   this.template('_Gemfile', 'Gemfile');
-
-  this.mkdir('__yo_tmp');
-  this.write('__yo_tmp/_READ_ME_IMPORTANT.txt', 'This folder is only used temporarily during yeoman generation!\nShould you see this file, it means the clean up process failed.\nYou can safely remove this directory and everything in it now.');
 };
 
-IvkWordpressGenerator.prototype.vagrantUp = function vagrantUp() {
-  var cb = this.async();
-  var prompts = [
-    {
-      type: 'confirm',
-      name: 'booting',
-      message: 'Do you want to boot the vagrant box right now?',
-      default: true
-    }
-  ];
-  this.prompt(prompts, function(props) {
-    this.booting = props.booting;
-    if(this.booting) {
-      console.log('Booting vagrant box.');
-      exec('vagrant up');// TODO:  We might have to move git init out of the provision script
-    } else {
-      console.log('Skipping vagrant up.');
-      // TODO: Split provision script and exec the part of the script handling git submodules here.
-    }
-    cb();
-  }.bind(this));
+IvkWordpressGenerator.prototype._vagrantUp = function _vagrantUp() {
+  if(this.answers.booting) {
+    console.log('Booting vagrant box.');
+    exec('vagrant up');
+  } else {
+    console.log('Skipping vagrant up.');
+  }
 };
 
-IvkWordpressGenerator.prototype.installGems = function installGems() {
+IvkWordpressGenerator.prototype._installGems = function _installGems() {
     console.log("Installing gem dependencies");
     exec("bundle install");
-};
-
-IvkWordpressGenerator.prototype.wpLocalEnvSetup = function wpLocalEnvSetup() {
-  var cb = this.async();
-  var envs = ['local', 'staging', 'production'];
-  var questions = [
-    {
-      name: 'host',
-      message: 'What is the server url?',
-    }, {
-      name: 'db.host',
-      message: 'What is the database host?',
-      default: 'localhost'
-    }, {
-      name: 'db.name',
-      message: 'What is the database name?',
-    }, {
-      name: 'db.user',
-      message: 'What is the database user?',
-      default: 'root'
-    }, {
-      name: 'db.password',
-      message: 'What is the database password?',
-    }, {
-      name: 'db.prefix',
-      message: 'What is the database prefix?',
-      default: 'wp_'
-    }
-  ];
-  this.wpConfig = this.wpConfig || {};
-  this.sshConfig = this.sshConfig || {};
-
-  var prefixed = {};
-
-  _.forEach(envs, function(env) {
-    prefixed[env] = _.map(questions, function(question) {
-      question.type = 'input';
-      question.default = question.default || '';
-      if(env === 'local' && this.booting) {
-        switch(question.name) {
-          case 'db.name':
-          case 'db.user':
-            question.default = 'skeleton'
-            break;
-          case 'db.password':
-            question.default = 'secret';
-            break;
-        }
-      }
-      return question;
-    }.bind(this));
-  }.bind(this));
-
-  console.log('Prompting for environment: ' + chalk.yellow('local'));
-
-  this.prompt(prefixed.local, function(answers) {
-    _.merge(this.wpConfig, answers);
-  });
-
-  console.log('Prompting for environment: ' + chalk.yellow('staging'));
-
-  this.prompt(prefixed.staging, function(answers) {
-    _.merge(this.wpConfig, answers);
-  }.bind(this));
-
-  console.log('Prompting for environment: ' + chalk.yellow('production'));
-
-  this.prompt(prefixed.production, function(answers) {
-    _.merge(this.wpConfig, answers);
-    console.log('Writing to capistrano config.rb file:');
-    this.template('_config.rb', 'cap/config/config.rb');
-    cb();
-  }.bind(this));
-
-  this.prompt([
-    {
-      type: 'input',
-      name: 'user',
-      message: 'What is the ssh user\'s name?',
-      default: ''
-    }, {
-      type: 'input',
-      name: 'host',
-      message: 'What is the ssh user\'s url?',
-      default: ''
-    }
-  ], function(answers) {
-    _.merge(this.sshConfig, answers);
-    console.log('Writing to capistrano production.rb file:');
-    this.template('_production.rb', 'cap/config/production.rb');
-    cb();
-  }.bind(this));
-
-  console.log('Additional ' + chalk.yellow('local') + ' questions:');
-
-  var questions = [
-    {
-      type: 'input',
-      name: 'lang',
-      message: 'Enter language code, leave blank for American English',
-      default: ''
-    },
-    {
-      type: 'confirm',
-      name: 'debugging',
-      message: 'Enable debugging?',
-      default: true
-    }
-  ];
-
-  this.prompt(questions, function (answers) {
-    var saltURL = 'https://api.wordpress.org/secret-key/1.1/salt';
-    console.log("Fetching salts from: " + saltURL)
-    exec("curl -o __yo_tmp/salts.txt " + saltURL);
-
-    var salts = this.readFileAsString('__yo_tmp/salts.txt');
-
-    this.wpConfig = this.wpConfig || {};
-
-    _.merge(this.wpConfig, {
-      salts: salts,
-      language: answers.lang,
-      debuggingEnabled: answers.debugging
-    });
-
-    console.log("Writing to env_local.php file:");
-    this.template('_env_local.php', 'env_local.php');
-
-    cb();
-  }.bind(this));
-
 };
 
 
@@ -248,7 +211,6 @@ IvkWordpressGenerator.prototype.wpLocalEnvSetup = function wpLocalEnvSetup() {
 // IvkWordpressGenerator.prototype.gitSetup = function gitSetup() {
 //   console.log("Initializing git and setting remote");
 
-//   rm('-rf', '.git');
 //   exec("git init");
 //   exec("git remote add origin " + this.gitDetails['url']);
 //   exec("git add -A");
@@ -261,14 +223,17 @@ IvkWordpressGenerator.prototype.tempCleanup = function tempCleanup() {
 
   rm('-rf', '__yo_tmp');
 
-  console.log('New Wordpress site available at: ' + chalk.green('http://192.168.33.10/') + ' (If you booted the vagrant box)');
+  exec("git init");
+  exec("git remote add origin " + this.answers.git.url);
+  exec("git add -A");
+  exec("git commit -am 'Initial Commit'");
+
+  if(this.answers.booting) {
+    console.log('New Wordpress site available at: ' + chalk.green('http://192.168.33.10/') + ' (If you booted the vagrant box)');
+  }
 };
 
-
-// private helper functions below
-// needed them on the prototype, else we're losing context
-// functions with a leading _ will NOT be run by yeoman as steps
-
+// Helper functions
 IvkWordpressGenerator.prototype._printHelp = function(msg) {
   console.log(chalk.green(msg));
 };

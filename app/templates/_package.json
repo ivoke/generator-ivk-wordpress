@@ -1,9 +1,9 @@
 {
-  "name": "<%= projectName %>",
+  "name": "<%= answers.project %>",
   "version": "0.0.0",
   "repository": {
     "type": "git",
-    "url": "git://github.com/<%= gitDetails['username'] %>/<%= gitDetails['repo'] %>.git"
+    "url": "git://github.com/<%= answers.repo %>.git"
   },
 
   "dependencies": {}

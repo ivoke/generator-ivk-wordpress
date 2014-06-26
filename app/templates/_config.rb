@@ -1,6 +1,6 @@
 # Customize this file, and then rename it to config.rb
 
-set :application, "<%= projectName %>"
+set :application, "<%= answers.project %>"
 set :deploy_via, :copy
 set :check_revision, false
 set :scm, :git
@@ -17,38 +17,38 @@ set :wp do
   {
     :production => {
       :db => {
-        :host     => '<%= wpConfig["production.db.host"] %>',
-        :user     => '<%= wpConfig["production.db.user"] %>',
-        :password => '<%= wpConfig["production.db.password"] %>',
-        :name     => '<%= wpConfig["production.db.name"] %>',
+        :host     => '<%= answers["production.db.host"] %>',
+        :user     => '<%= answers["production.db.user"] %>',
+        :password => '<%= answers["production.db.password"] %>',
+        :name     => '<%= answers["production.db.name"] %>',
       },
       :wp => {
-        :host     => '<%= wpConfig["production.host"] %>',
-        :table_prefix   => '<%= wpConfig["production.db.prefix"] %>'
+        :host     => '<%= answers["production.host"] %>',
+        :table_prefix   => '<%= answers["production.db.prefix"] %>'
       }
     },
     :staging => {
       :db => {
-        :host     => '<%= wpConfig["production.db.host"] %>',
-        :user     => '<%= wpConfig["production.db.user"] %>',
-        :password => '<%= wpConfig["production.db.password"] %>',
-        :name     => '<%= wpConfig["production.db.name"] %>',
+        :host     => '<%= answers["production.db.host"] %>',
+        :user     => '<%= answers["production.db.user"] %>',
+        :password => '<%= answers["production.db.password"] %>',
+        :name     => '<%= answers["production.db.name"] %>',
       },
       :wp => {
-        :host     => '<%= wpConfig["production.host"] %>',
-        :table_prefix   => '<%= wpConfig["production.db.prefix"] %>'
+        :host     => '<%= answers["production.host"] %>',
+        :table_prefix   => '<%= answers["production.db.prefix"] %>'
       }
     },
     :local => {
       :db => {
-        :host     => '<%= wpConfig["production.db.host"] %>',
-        :user     => '<%= wpConfig["production.db.user"] %>',
-        :password => '<%= wpConfig["production.db.password"] %>',
-        :name     => '<%= wpConfig["production.db.name"] %>',
+        :host     => '<%= answers["production.db.host"] %>',
+        :user     => '<%= answers["production.db.user"] %>',
+        :password => '<%= answers["production.db.password"] %>',
+        :name     => '<%= answers["production.db.name"] %>',
       },
       :wp => {
-        :host     => '<%= wpConfig["production.host"] %>',
-        :table_prefix   => '<%= wpConfig["production.db.prefix"] %>'
+        :host     => '<%= answers["production.host"] %>',
+        :table_prefix   => '<%= answers["production.db.prefix"] %>'
       }
     }
   }
