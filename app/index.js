@@ -140,8 +140,12 @@ IvkWordpressGenerator.prototype.wpLocalEnvSetup = function wpLocalEnvSetup() {
   this.wpConfig = this.wpConfig || {};
   this.sshConfig = this.sshConfig || {};
 
+  var prefixed = {};
+
   _.forEach(envs, function(env) {
-    var prefixed = _.forEach(questions, function(question) {
+    prefixed[env] = _.map(questions, function(question) {
+      question.type = 'input';
+      question.default = question.default || '';
       if(env === 'local' && this.booting) {
         switch(question.name) {
           case 'db.name':
@@ -153,30 +157,49 @@ IvkWordpressGenerator.prototype.wpLocalEnvSetup = function wpLocalEnvSetup() {
             break;
         }
       }
-      question.name = env + '.' + question.name;
-    });
-    console.log('Prompting for environment: ' + chalk.yellow(env));
-    this.prompt(prefixed, function(answers) {
-      _.merge(this.wpConfig, answers);
+      return question;
     }.bind(this));
-    if (env === 'production') {
-      this.prompt([ {
-        name: 'user',
-        message: 'What is the ssh user\'s name?',
-      }, {
-        name: 'host',
-        message: 'What is the ssh user\'s url?',
-      }], function(answers) {
-        _.merge(this.sshConfig, answers);
-      }.bind(this));
-    }
   }.bind(this));
 
-  console.log('Writing to capistrano config.rb file:');
-  this.template('_config.rb', 'cap/config/config.rb');
+  console.log('Prompting for environment: ' + chalk.yellow('local'));
 
-  console.log('Writing to capistrano produciton.rb file:');
-  this.template('_production.rb', 'cap/config/production.rb');
+  this.prompt(prefixed.local, function(answers) {
+    _.merge(this.wpConfig, answers);
+  });
+
+  console.log('Prompting for environment: ' + chalk.yellow('staging'));
+
+  this.prompt(prefixed.staging, function(answers) {
+    _.merge(this.wpConfig, answers);
+  }.bind(this));
+
+  console.log('Prompting for environment: ' + chalk.yellow('production'));
+
+  this.prompt(prefixed.production, function(answers) {
+    _.merge(this.wpConfig, answers);
+    console.log('Writing to capistrano config.rb file:');
+    this.template('_config.rb', 'cap/config/config.rb');
+    cb();
+  }.bind(this));
+
+  this.prompt([
+    {
+      type: 'input',
+      name: 'user',
+      message: 'What is the ssh user\'s name?',
+      default: ''
+    }, {
+      type: 'input',
+      name: 'host',
+      message: 'What is the ssh user\'s url?',
+      default: ''
+    }
+  ], function(answers) {
+    _.merge(this.sshConfig, answers);
+    console.log('Writing to capistrano production.rb file:');
+    this.template('_production.rb', 'cap/config/production.rb');
+    cb();
+  }.bind(this));
 
   console.log('Additional ' + chalk.yellow('local') + ' questions:');
 
@@ -205,7 +228,7 @@ IvkWordpressGenerator.prototype.wpLocalEnvSetup = function wpLocalEnvSetup() {
     this.wpConfig = this.wpConfig || {};
 
     _.merge(this.wpConfig, {
-      salts: salts
+      salts: salts,
       language: answers.lang,
       debuggingEnabled: answers.debugging
     });
