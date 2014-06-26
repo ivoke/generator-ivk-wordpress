@@ -1,7 +1,7 @@
 {
-  "name": "generator-ivk-wordpress",
+  "name": "wordpress",
   "version": "0.0.0",
-  "description": "A generator for Yeoman",
+  "description": "Wordpress Stack with Vagrant, Roots and all the goodies that come with it.",
   "keywords": [
     "yeoman-generator"
   ],
