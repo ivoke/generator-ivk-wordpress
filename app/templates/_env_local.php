@@ -5,17 +5,17 @@ You *must* include the four main database defines
 You may include other settings here that you only want enabled on your local development checkouts
 */
 
-define( 'DB_NAME',     '<%= answers['db']['name'] %>' );
-define( 'DB_USER',     '<%= answers['db']['user'] %>' );
-define( 'DB_PASSWORD', '<%= answers['db']['password'] %>' );
-define( 'DB_HOST',     '<%= answers['db']['host'] %>' );
+define( 'DB_NAME',     '<%= answers['local.db.name'] %>' );
+define( 'DB_USER',     '<%= answers['local.db.user'] %>' );
+define( 'DB_PASSWORD', '<%= answers['local.db.password'] %>' );
+define( 'DB_HOST',     '<%= answers['local.db.host'] %>' );
 
 
 // ==============================================================
 // Salts, for security
 // Grabbed from: https://api.wordpress.org/secret-key/1.1/salt
 // ==============================================================
-<%= answers.salts %>
+<%= answers['salts'] %>
 
 // ==============================================================
 // Table prefix
